@@ -1,0 +1,36 @@
+name: check_syntax #nazwa workflow
+on:
+  [push] #kiedy plik będzie push-owany
+
+jobs:
+  check-syntax:
+    runs-on: ubuntu-latest #określenie systemu na którym ma pracować 
+    
+    strategy:
+      matrix: 
+        python-v: [3.9, '3.10', 3.11] #definicja "tablicy", które określa w jakich wersjach ma pracować python
+    steps: 
+    #sprawdzenie repozytorium
+      - name: checkout repository
+        uses: actions/checkout@v2
+        #ustawienie python-a
+      - name: Set up Python #nazwa
+        uses: actions/setup-python@v4 #konfigurowanie pythona
+        with:
+          python-version: ${{ matrix.python-v }} #określenie wersji python-a
+        #aktualizacja pip
+      - name: Update pip 
+        run: |
+          python -m pip install --upgrade pip 
+        #instalacja flake8
+      - name: Install flake8
+        run: |
+           python -m pip install flake8
+        #wyświetlenie wersji python-a
+      - name: Display Python version
+        run: |
+          python --version
+        #uruchomienie flake8
+      - name: Run flake8
+        run: | 
+          flake8 . 
