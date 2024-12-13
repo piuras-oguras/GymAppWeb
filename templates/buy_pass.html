@@ -1,3 +1,4 @@
+<!-- templates/buy_pass.html -->
 {% extends "base.html" %}
 
 {% block title %}Kup Karnet{% endblock %}
@@ -5,18 +6,27 @@
 {% block content %}
 <h1>Kup Karnet na Siłownię</h1>
 <form action="/buy_pass" method="post">
-    <label for="name">Imię:</label>
-    <input type="text" id="name" name="name" required>
+    <h2>Dane Klienta</h2>
+    <label for="imie">Imię:</label>
+    <input type="text" id="imie" name="imie" required>
+
+    <label for="nazwisko">Nazwisko:</label>
+    <input type="text" id="nazwisko" name="nazwisko" required>
+
+    <label for="data_urodzenia">Data Urodzenia:</label>
+    <input type="date" id="data_urodzenia" name="data_urodzenia" required>
+
+    <label for="numer_telefonu">Numer Telefonu:</label>
+    <input type="tel" id="numer_telefonu" name="numer_telefonu" required>
 
     <label for="email">Email:</label>
     <input type="email" id="email" name="email" required>
 
-    <label for="pass_type">Typ Karnetu:</label>
-    <select id="pass_type" name="pass_type" required>
-        <option value="1_month">1 Miesiąc</option>
-        <option value="3_months">3 Miesiące</option>
-        <option value="6_months">6 Miesięcy</option>
-        <option value="annual">Roczny</option>
+    <h2>Członkostwo</h2>
+    <label for="typ_czlonkostwa">Typ Członkostwa:</label>
+    <select id="typ_czlonkostwa" name="typ_czlonkostwa" required>
+        <option value="miesieczne">Miesieczne (30 dni)</option>
+        <option value="roczne">Roczne (365 dni)</option>
     </select>
 
     <button type="submit">Kup Karnet</button>
