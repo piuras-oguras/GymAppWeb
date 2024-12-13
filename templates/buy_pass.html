@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Kup Karnet{% endblock %}
+
+{% block content %}
+<h1>Kup Karnet na Siłownię</h1>
+<form action="/buy_pass" method="post">
+    <label for="name">Imię:</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required>
+
+    <label for="pass_type">Typ Karnetu:</label>
+    <select id="pass_type" name="pass_type" required>
+        <option value="1_month">1 Miesiąc</option>
+        <option value="3_months">3 Miesiące</option>
+        <option value="6_months">6 Miesięcy</option>
+        <option value="annual">Roczny</option>
+    </select>
+
+    <button type="submit">Kup Karnet</button>
+</form>
+{% endblock %}
