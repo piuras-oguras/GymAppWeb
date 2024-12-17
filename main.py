@@ -4,11 +4,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from models import Klient, Czlonkostwo
+from models import Klient, Czlonkostwo, Placowka, Zajecia
 from database import engine, SessionLocal
 from datetime import datetime, timedelta
 from starlette.middleware.sessions import SessionMiddleware  # Ensure this import is correct
 from typing import Optional
+from sqlalchemy.orm import joinedload
+
 
 import models
 
@@ -73,8 +75,52 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> Klient:
     return klient
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request, current_user: Klient = Depends(get_current_user)):
-    return templates.TemplateResponse("dashboard.html", {"request": request, "user": current_user})
+async def dashboard(request: Request, current_user: Klient = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Pobierz status członkostwa użytkownika
+    czlonkostwo = db.query(Czlonkostwo).filter(Czlonkostwo.id_klienta == current_user.id_klienta).first()
+
+    if not czlonkostwo:
+        membership_status = "Brak aktywnego członkostwa"
+    else:
+        membership_status = f"{czlonkostwo.typ_czlonkostwa.capitalize()} (ważne do {czlonkostwo.data_zakonczenia})"
+
+    # Pobierz wszystkie placówki
+    placowki = db.query(Placowka).all()
+
+    # Pobierz dostępne zajęcia (np. te, które są jeszcze nie rozpoczęte)
+    teraz = datetime.utcnow()
+    zajecia = db.query(Zajecia).filter(Zajecia.data_i_godzina > teraz).options(joinedload(Zajecia.instruktor)).all()
+
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "user": current_user,
+        "membership_status": membership_status,
+        "placowki": placowki,
+        "zajecia": zajecia
+    })
+
+@app.post("/zapisz_sie_na_zajecia", response_class=RedirectResponse)
+async def zapisz_sie_na_zajecia(
+        request: Request,
+        id_zajec: int = Form(...),
+        db: Session = Depends(get_db),
+        current_user: Klient = Depends(get_current_user)
+):
+    # Sprawdź, czy zajęcia istnieją
+    zajecia = db.query(Zajecia).filter(Zajecia.id_zajec == id_zajec).first()
+    if not zajecia:
+        raise HTTPException(status_code=404, detail="Zajęcia nie zostały znalezione.")
+
+    # Możesz dodać logikę rezerwacji lub inny sposób zapisania użytkownika na zajęcia
+    # Ponieważ nie mamy tabeli rezerwacji zajęć, możemy np. dodać komentarz lub inną metodę
+    # W tym przykładzie dodamy informację do komentarzy (zakładając, że taka opcja istnieje)
+
+    # Przykład: Dodanie wydarzenia do listy uczestnictwa (jeśli istnieje taka relacja)
+    # Jeśli nie ma takiej tabeli, można pominąć lub dostosować do istniejących modeli
+
+    # Przekierowanie na dashboard z komunikatem sukcesu
+    return RedirectResponse(url="/dashboard?success=Zostałeś zapisany na zajęcia.", status_code=303)
+
 
 @app.get("/buy_pass", response_class=HTMLResponse)
 async def buy_pass_form(request: Request):

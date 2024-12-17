@@ -79,7 +79,7 @@ class Biurowy(Base):
 
 
 class Czlonkostwo(Base):
-    __tablename__ = "czlonkostwa"
+    __tablename__ = "czlonkostwo"
 
     id_czlonkostwa = Column(Integer, primary_key=True, index=True)
     id_klienta = Column(Integer, ForeignKey("klienci.id_klienta"), nullable=False)
