@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Witaj, {{ user.imie }} {{ user.nazwisko }}</h1>
+<p>Email: {{ user.email }}</p>
+<p>Numer Telefonu: {{ user.numer_telefonu }}</p>
+
+<h2>Status Członkostwa</h2>
+<p>{{ membership_status }}</p>
+
+<h2>Placówki</h2>
+<ul>
+    {% for placowka in placowki %}
+    <li>
+        <strong>{{ placowka.nazwa }}</strong><br>
+        Adres: {{ placowka.adres }}<br>
+        Godziny Otwarcia: {{ placowka.godziny_otwaria }}<br>
+        Telefon: {{ placowka.numer_telefonu }}
+    </li>
+    {% endfor %}
+</ul>
+
+<h2>Dostępne Zajęcia</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Nazwa Zajęć</th>
+        <th>Instruktor</th>
+        <th>Data i Godzina</th>
+        <th>Lokalizacja</th>
+        <th>Akcja</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for zajecia in zajecia %}
+    <tr>
+        <td>{{ zajecia.nazwa_zajec }}</td>
+        <td>{{ zajecia.instruktor.pracownik.imie }} {{ zajecia.instruktor.pracownik.nazwisko }}</td>
+        <td>{{ zajecia.data_i_godzina }}</td>
+        <td>{{ zajecia.lokalizacja_w_silowni }}</td>
+        <td>
+            <form action="/zapisz_sie_na_zajecia" method="post">
+                <input type="hidden" name="id_zajec" value="{{ zajecia.id_zajec }}">
+                <button type="submit">Zapisz się</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<a href="/logout">Logout</a>
+{% endblock %}

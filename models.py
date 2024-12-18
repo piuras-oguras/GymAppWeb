@@ -14,7 +14,7 @@ class Klient(Base):
     numer_telefonu = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
 
-    czlonkostwa = relationship("Czlonkostwo", back_populates="klient")
+    czlonkostwo = relationship("Czlonkostwo", back_populates="klient")
     rezerwacje_sprzetu = relationship("RezerwacjaSprzetu", back_populates="klient")
     platnosci = relationship("Platnosc", back_populates="klient")
     anulowania_czlonkostwa = relationship("AnulowanieCzlonkostwa", back_populates="klient")
@@ -79,7 +79,7 @@ class Biurowy(Base):
 
 
 class Czlonkostwo(Base):
-    __tablename__ = "czlonkostwa"
+    __tablename__ = "czlonkostwo"
 
     id_czlonkostwa = Column(Integer, primary_key=True, index=True)
     id_klienta = Column(Integer, ForeignKey("klienci.id_klienta"), nullable=False)
@@ -88,7 +88,7 @@ class Czlonkostwo(Base):
     data_zakonczenia = Column(Date, nullable=False)
     status = Column(String, default="active", nullable=False)
 
-    klient = relationship("Klient", back_populates="czlonkostwa")
+    klient = relationship("Klient", back_populates="czlonkostwo")
     platnosci = relationship("Platnosc", back_populates="czlonkostwo")
 
 
@@ -139,7 +139,7 @@ class Platnosc(Base):
     kwota = Column(Float, nullable=False)
     metoda_platnosci = Column(String, nullable=False)
     id_klienta = Column(Integer, ForeignKey("klienci.id_klienta"), nullable=False)
-    id_czlonkostwa = Column(Integer, ForeignKey("czlonkostwa.id_czlonkostwa"), nullable=False)
+    id_czlonkostwa = Column(Integer, ForeignKey("czlonkostwo.id_czlonkostwa"), nullable=False)
 
     klient = relationship("Klient", back_populates="platnosci")
     czlonkostwo = relationship("Czlonkostwo", back_populates="platnosci")

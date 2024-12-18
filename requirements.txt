@@ -1,6 +1,9 @@
-fastapi
-uvicorn
-sqlalchemy
+fastapi~=0.115.6
+uvicorn~=0.34.0
+sqlalchemy~=2.0.36
 jinja2
 python-multipart
 aiofiles
+starlette~=0.41.3
+python-dotenv~=1.0.1
+requests~=2.32.3
