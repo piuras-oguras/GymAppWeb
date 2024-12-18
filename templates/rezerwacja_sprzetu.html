@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Rezerwacja Sprzętu{% endblock %}
+{% block content %}
+<h1>Rezerwacja Sprzętu</h1>
+
+{% if request.query_params.error %}
+<p style="color:red;">{{ request.query_params.error }}</p>
+{% endif %}
+{% if request.query_params.success %}
+<p style="color:green;">{{ request.query_params.success }}</p>
+{% endif %}
+
+<form action="/rezerwacja_sprzetu" method="post">
+    <label for="id_sprzetu">Wybierz sprzęt:</label>
+    <select name="id_sprzetu" id="id_sprzetu" required>
+        {% for sprzet in sprzet %}
+        <option value="{{ sprzet.id_sprzetu }}">{{ sprzet.nazwa }} - {{ sprzet.lokalizacja_w_silowni }}</option>
+        {% endfor %}
+    </select><br><br>
+
+    <label for="data_i_godzina">Data i godzina (YYYY-MM-DD HH:MM):</label>
+    <input type="text" id="data_i_godzina" name="data_i_godzina" placeholder="2024-05-01 14:30" required><br><br>
+
+    <label for="czas_trwania_rezerwacji">Czas trwania (minuty):</label>
+    <input type="number" id="czas_trwania_rezerwacji" name="czas_trwania_rezerwacji" min="30" max="480" required><br><br>
+
+    <button type="submit">Zarezerwuj</button>
+</form>
+{% endblock %}

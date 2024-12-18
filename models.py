@@ -13,12 +13,14 @@ class Klient(Base):
     data_rejestracji = Column(DateTime, default=datetime.utcnow)
     numer_telefonu = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
+    id_zajec = Column(Integer, ForeignKey("zajecia.id_zajec"), nullable=True)
 
     czlonkostwo = relationship("Czlonkostwo", back_populates="klient")
     rezerwacje_sprzetu = relationship("RezerwacjaSprzetu", back_populates="klient")
     platnosci = relationship("Platnosc", back_populates="klient")
     anulowania_czlonkostwa = relationship("AnulowanieCzlonkostwa", back_populates="klient")
     oceny_instruktorow = relationship("OcenaInstruktorow", back_populates="klient")
+    zajecia = relationship("Zajecia", back_populates="klient")
 
 
 class Placowka(Base):
@@ -29,8 +31,6 @@ class Placowka(Base):
     adres = Column(String, nullable=False)
     godziny_otwarcia = Column(String, nullable=False)
     numer_telefonu = Column(String, nullable=False)
-
-    pracownicy = relationship("Pracownik", back_populates="placowka")
 
 
 class Pracownik(Base):
@@ -47,17 +47,14 @@ class Pracownik(Base):
     email = Column(String, unique=True, nullable=False)
     numer_telefonu = Column(String, nullable=False)
     status = Column(String, nullable=False)
-    id_placowki = Column(Integer, ForeignKey("placowki.id_placowki"), nullable=False)
 
-    placowka = relationship("Placowka", back_populates="pracownicy")
     instruktor = relationship("Instruktor", uselist=False, back_populates="pracownik")
     biurowy = relationship("Biurowy", uselist=False, back_populates="pracownik")
     grafik_pracy = relationship("GrafikPracownikow", back_populates="pracownik")
-    # Usunięto niepotrzebną relację zajecia = relationship("Zajecia", back_populates="instruktor")
 
 
 class Instruktor(Base):
-    __tablename__ = "instruktorzy"
+    __tablename__ = "instruktor"
 
     id_pracownika = Column(Integer, ForeignKey("pracownicy.id_pracownika"), primary_key=True)
     specjalizacja = Column(String, nullable=False)
@@ -100,9 +97,10 @@ class Zajecia(Base):
     data_i_godzina = Column(DateTime, nullable=False)
     maksymalna_ilosc_uczestnikow = Column(Integer, nullable=False)
     lokalizacja_w_silowni = Column(String, nullable=False)
-    id_instruktora = Column(Integer, ForeignKey("instruktorzy.id_pracownika"), nullable=False)
+    id_instruktora = Column(Integer, ForeignKey("instruktor.id_pracownika"), nullable=False)
 
     instruktor = relationship("Instruktor", back_populates="zajecia")
+    klient = relationship("Klient", back_populates="zajecia")
 
 
 class Sprzet(Base):
@@ -174,7 +172,7 @@ class OcenaInstruktorow(Base):
     ocena = Column(Integer, nullable=False)  # Zakładam ocenę jako liczbę całkowitą
     komentarz = Column(Text, nullable=True)
     id_klienta = Column(Integer, ForeignKey("klienci.id_klienta"), nullable=False)
-    id_instruktora = Column(Integer, ForeignKey("instruktorzy.id_pracownika"), nullable=False)
+    id_instruktora = Column(Integer, ForeignKey("instruktor.id_pracownika"), nullable=False)
 
     klient = relationship("Klient", back_populates="oceny_instruktorow")
     instruktor = relationship("Instruktor", back_populates="oceny_instruktorow")

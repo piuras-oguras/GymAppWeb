@@ -4,10 +4,12 @@
 <h1>Witaj, {{ user.imie }} {{ user.nazwisko }}</h1>
 <p>Email: {{ user.email }}</p>
 <p>Numer Telefonu: {{ user.numer_telefonu }}</p>
-
+<a href="/logout">Wyloguj się</a>
 <h2>Status Członkostwa</h2>
 <p>{{ membership_status }}</p>
-
+{% if show_button_sprzet%}
+<a href="/rezerwacja_sprzetu">Rezerwuj sprzet</a>
+{%endif%}
 <h2>Placówki</h2>
 <ul>
     {% for placowka in placowki %}
@@ -19,7 +21,9 @@
     </li>
     {% endfor %}
 </ul>
-
+<h2>Zajecia</h2>
+<p>{{aktualne_zajecia}}</p>
+<a href="/wypisz_sie">Zrezygnuj</a>
 <h2>Dostępne Zajęcia</h2>
 <table>
     <thead>
@@ -49,5 +53,5 @@
     </tbody>
 </table>
 
-<a href="/logout">Logout</a>
+
 {% endblock %}

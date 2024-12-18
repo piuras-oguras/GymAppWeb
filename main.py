@@ -4,6 +4,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql.functions import current_user
+
 from models import Klient, Czlonkostwo, Placowka, Zajecia
 from database import engine, SessionLocal
 from datetime import datetime, timedelta
@@ -76,25 +78,36 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> Klient:
 async def dashboard(request: Request, current_user: Klient = Depends(get_current_user), db: Session = Depends(get_db)):
     # Pobierz status członkostwa użytkownika
     czlonkostwo = db.query(Czlonkostwo).filter(Czlonkostwo.id_klienta == current_user.id_klienta).first()
-
+    button_status_reserved_things = False
     if not czlonkostwo:
         membership_status = "Brak aktywnego członkostwa"
     else:
         membership_status = f"{czlonkostwo.typ_czlonkostwa.capitalize()} (ważne do {czlonkostwo.data_zakonczenia})"
-
+        button_status_reserved_things = True
     # Pobierz wszystkie placówki
     placowki = db.query(Placowka).all()
 
     # Pobierz dostępne zajęcia (np. te, które są jeszcze nie rozpoczęte)
-    teraz = datetime.utcnow()
-    zajecia = db.query(Zajecia).filter(Zajecia.data_i_godzina > teraz).options(joinedload(Zajecia.instruktor)).all()
+    teraz = datetime.now()
+    zajecia = db.query(Zajecia).options(joinedload(Zajecia.instruktor)).all()
 
+    #Czy użytkownik jest zapisany na zajęcia
+    czyZapisany = db.query(Klient).filter(Klient.id_klienta == current_user.id_klienta).first()
+    status_zajec = czyZapisany.id_zajec
+
+    if status_zajec:
+        zajecia_pojedyncze  =db.query(Zajecia).filter(Zajecia.id_zajec == status_zajec).first()
+        zajecia_aktualne = f"Jesteś zapisany na zajęcia {zajecia_pojedyncze.nazwa_zajec}, które odbywają się w dniu {zajecia_pojedyncze.data_i_godzina} w lokalizacji {zajecia_pojedyncze.lokalizacja_w_silowni}"
+    else:
+        zajecia_aktualne = "Aktualnie nie jesteś przypisany do zajęć"
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "user": current_user,
         "membership_status": membership_status,
         "placowki": placowki,
-        "zajecia": zajecia
+        "aktualne_zajecia": zajecia_aktualne,
+        "zajecia": zajecia,
+        "show_button_sprzet": button_status_reserved_things
     })
 
 @app.post("/zapisz_sie_na_zajecia", response_class=RedirectResponse)
@@ -109,16 +122,32 @@ async def zapisz_sie_na_zajecia(
     if not zajecia:
         raise HTTPException(status_code=404, detail="Zajęcia nie zostały znalezione.")
 
-    # Możesz dodać logikę rezerwacji lub inny sposób zapisania użytkownika na zajęcia
-    # Ponieważ nie mamy tabeli rezerwacji zajęć, możemy np. dodać komentarz lub inną metodę
-    # W tym przykładzie dodamy informację do komentarzy (zakładając, że taka opcja istnieje)
+    # Aktualizuj id_zajec klienta
+    current_user.id_zajec = zajecia.id_zajec
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Błąd podczas zapisywania na zajęcia.")
 
-    # Przykład: Dodanie wydarzenia do listy uczestnictwa (jeśli istnieje taka relacja)
-    # Jeśli nie ma takiej tabeli, można pominąć lub dostosować do istniejących modeli
-
-    # Przekierowanie na dashboard z komunikatem sukcesu
     return RedirectResponse(url="/dashboard?success=Zostałeś zapisany na zajęcia.", status_code=303)
 
+@app.get("/wypisz_sie", response_class=RedirectResponse)
+async def wypisz_sie_z_zajec(
+        request: Request,
+        db: Session = Depends(get_db),
+        current_user: Klient = Depends(get_current_user)
+):
+
+    # Aktualizuj id_zajec klienta
+    current_user.id_zajec = None
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Błąd podczas zapisywania na zajęcia.")
+
+    return RedirectResponse(url="/dashboard?success=Zostałeś zapisany na zajęcia.", status_code=303)
 
 @app.get("/buy_pass", response_class=HTMLResponse)
 async def buy_pass_form(request: Request):
