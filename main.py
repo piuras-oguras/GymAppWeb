@@ -20,7 +20,6 @@ app = FastAPI()
 # Add SessionMiddleware with a secret key
 app.add_middleware(SessionMiddleware, secret_key="your-very-secure-secret-key")  # Replace with a secure key
 
-
 # Configure static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -216,11 +215,5 @@ def raport_platnosci(request: Request, data_od: str = Form(...), data_do: str = 
 def raport_klienta(request: Request,klient_id: int = Form(...), data_platnosci_od: str = Form(...), data_platnosci_do: str = Form(...)):
     # Budowanie URL raportu
     base_url = f"http://asus-x15-szymon/Reports/report/formularz"
-
-
-
-
-
     link = f"{base_url}?Id_klienta_par={klient_id}&Data_platnosci_od={data_platnosci_od}&Data_platnosci_do={data_platnosci_do}"
-
     return RedirectResponse(url=link)
