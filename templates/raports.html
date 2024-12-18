@@ -3,6 +3,49 @@
 {% block title %}Strona logowania{% endblock %}
 
 {% block content %}
-<a href="/raport/raport-czlonkostw">Raporty Członkostw</a>
+<h3>Raport członkostw</h3>
+<form action="/raport/raport-czlonkostw" method="post">
+    <label for="data_poczatkowa">Data Początkowa:</label>
+    <input type="date" id="data_poczatkowa" name="data_poczatkowa" required><br><br>
+
+    <label for="data_koncowa">Data Końcowa:</label>
+    <input type="date" id="data_koncowa" name="data_koncowa" required><br><br>
+
+    <input type="submit" value="Generuj raport">
+
+
+</form>
+<h3>Raport płatności</h3>
+<form action="/raport/raport-platnosci" method="post">
+    <label for="data_od">Data od:</label>
+    <input type="date" id="data_od" name="data_od" required><br><br>
+
+    <label for="data_do">Data do:</label>
+    <input type="date" id="data_do" name="data_do" required><br><br>
+
+    <input type="submit" value="Generuj raport">
+
+
+</form>
+<h3>Formularz klienta</h3>
+<form action="/raport/formularz-klienta" method="post">
+    <label for="klient_id">Wybierz Klienta:</label>
+    <select id="klient_id" name="klient_id" required>
+        <option value="" disabled selected>-- Wybierz klienta --</option>
+        {% for klient in klienci %}
+        <option value="{{ klient.id_klienta }}">{{ klient.imie }} {{ klient.nazwisko }}</option>
+        {% endfor %}
+    </select>
+    <label for="data_platnosci_od">Data płatności od:</label>
+    <input type="date" id="data_platnosci_od" name="data_platnosci_od" required><br><br>
+
+    <label for="data_platnosci_do">Data płatności do:</label>
+    <input type="date" id="data_platnosci_do" name="data_platnosci_do" required><br><br>
+
+    <input type="submit" value="Generuj raport">
+
+
+</form>
+<a href="/raport/formularz-klienta">Formularz klienta</a>
 
 {% endblock %}

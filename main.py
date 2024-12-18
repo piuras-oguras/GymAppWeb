@@ -193,121 +193,34 @@ async def logout(request: Request):
     return RedirectResponse(url="/index", status_code=303)
 
 @app.get("/raport", response_class=HTMLResponse)
-async def index(request: Request):
-    return templates.TemplateResponse("raports.html", {"request": request})
+async def index(request: Request, db: Session = Depends(get_db)):
+    klienci=db.query(Klient).all()
+    return templates.TemplateResponse("raports.html", {"request": request,"klienci": klienci})
 
-@app.get("/raport/raport-czlonkostw", response_class=HTMLResponse)
-def raport_czlonkostw(
-
-):
-#     data_poczatkowa: datetime = Query(..., description="Data początkowa w formacie YYYY-MM-DD"),
-# data_zakonczenia: datetime = Query(..., description="Data zakończenia w formacie YYYY-MM-DD"),
-#     """
-#     Endpoint do przekierowywania do raportu członkostw.
-#     """
-#     # Konwersja dat do formatu YYYY-MM-DD
-#     data_poczatkowa_str = data_poczatkowa.strftime('%Y-%m-%d')
-#     data_zakonczenia_str = data_zakonczenia.strftime('%Y-%m-%d')
-#
-#     # Sprawdzenie logicznej poprawności dat
-#     if data_poczatkowa > data_zakonczenia:
-#         raise HTTPException(status_code=400, detail="Data początkowa nie może być późniejsza niż data zakończenia.")
-#
-#     # Ścieżka do raportu w SSRS
-#     report_path = "/Reports/RaportCzlonkostw"
-#
-#     # Parametry raportu
-#     params = {
-#         "Data_poczatkowa": data_poczatkowa_str,
-#         "Data_koncowa": data_zakonczenia_str,
-#     }
-
+@app.post("/raport/raport-czlonkostw", response_class=HTMLResponse)
+def raport_czlonkostw(request: Request, data_poczatkowa: str = Form(...), data_koncowa: str = Form(...)):
     # Budowanie URL raportu
-    ssrs_url = f"http://asus-x15-szymon/Reports/report/czlonkostwo?Data_poczatkowa=2023-01-01&Data_koncowa=2023-12-31"
+    base_url = f"http://asus-x15-szymon/Reports/report/czlonkostwo"
+    link = f"{base_url}?Data_poczatkowa={data_poczatkowa}&Data_koncowa={data_koncowa}"
+    return RedirectResponse(url=link)
 
-    return RedirectResponse(url=ssrs_url)
 
-# @app.get("/statystyki-zajec", response_class=HTMLResponse)
-# def statystyki_zajec(
-#         data_od: datetime = Query(..., description="Początek zakresu dat (YYYY-MM-DD)"),
-#         data_do: datetime = Query(..., description="Koniec zakresu dat (YYYY-MM-DD)")
-# ):
-#     """
-#     Endpoint do wyświetlania raportu statystyk zajęć z wykresem w przeglądarce.
-#
-#     - data_od: Początek zakresu dat (YYYY-MM-DD)
-#     - data_do: Koniec zakresu dat (YYYY-MM-DD)
-#     """
-#     report_path = "/Reports/StatystykiZajec"  # Dostosuj do rzeczywistej ścieżki raportu
-#     parameters = {
-#         'Data_od': data_od.strftime('%Y-%m-%d'),
-#         'Data_do': data_do.strftime('%Y-%m-%d')
-#     }
-#
-#     try:
-#         report_content = ssrs_client.get_report(report_path, format='HTML4.0', parameters=parameters)
-#         report_html = report_content.decode('utf-8')
-#         return HTMLResponse(content=report_html)
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Błąd podczas generowania raportu: {str(e)}")
-#
-# @app.get("/formularz-klienta", response_class=HTMLResponse)
-# def formularz_klienta(
-#         id_klienta: int = Query(..., description="ID klienta"),
-#         data_od_platnosci: datetime = Query(None, description="Początek zakresu dat płatności (YYYY-MM-DD)"),
-#         data_do_platnosci: datetime = Query(None, description="Koniec zakresu dat płatności (YYYY-MM-DD)")
-# ):
-#     """
-#     Endpoint do wyświetlania formularza klienta w przeglądarce.
-#
-#     - id_klienta: ID klienta
-#     - data_od_platnosci: Początek zakresu dat płatności (YYYY-MM-DD)
-#     - data_do_platnosci: Koniec zakresu dat płatności (YYYY-MM-DD)
-#     """
-#     report_path = "/Reports/FormularzKlienta"  # Dostosuj do rzeczywistej ścieżki raportu
-#     parameters = {
-#         'Id_klienta': id_klienta
-#     }
-#     if data_od_platnosci and data_do_platnosci:
-#         parameters['Data_od_platnosci'] = data_od_platnosci.strftime('%Y-%m-%d')
-#         parameters['Data_do_platnosci'] = data_do_platnosci.strftime('%Y-%m-%d')
-#
-#     try:
-#         report_content = ssrs_client.get_report(report_path, format='HTML4.0', parameters=parameters)
-#         report_html = report_content.decode('utf-8')
-#         return HTMLResponse(content=report_html)
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Błąd podczas generowania raportu: {str(e)}")
-#
-# @app.get("/raport-czlonkostw/download")
-# def raport_czlonkostw_download(
-#         data_poczatkowa: datetime = Query(..., description="Data początkowa w formacie YYYY-MM-DD"),
-#         data_zakonczenia: datetime = Query(..., description="Data zakończenia w formacie YYYY-MM-DD"),
-#         typ_czlonkostwa: str = Query('Wszystkie', description="Typ członkostwa, np. 'Standard', 'Premium', 'VIP'"),
-#         format: str = Query('PDF', description="Format raportu, np. 'PDF', 'EXCEL'")
-# ):
-#     """
-#     Endpoint do pobierania raportu członkostw jako plik.
-#
-#     - data_poczatkowa: Data początkowa (YYYY-MM-DD)
-#     - data_zakonczenia: Data zakończenia (YYYY-MM-DD)
-#     - typ_czlonkostwa: Typ członkostwa
-#     - format: Format raportu
-#     """
-#     report_path = "/Reports/RaportCzlonkostw"  # Dostosuj do rzeczywistej ścieżki raportu
-#     parameters = {
-#         'Data_początkowa': data_poczatkowa.strftime('%Y-%m-%d'),
-#         'Data_zakonczenia': data_zakonczenia.strftime('%Y-%m-%d'),
-#         'Typ_członkostwa': typ_czlonkostwa
-#     }
-#
-#     try:
-#         report_content = ssrs_client.get_report(report_path, format=format, parameters=parameters)
-#         filename = f"RaportCzlonkostw.{format.lower()}"
-#         return StreamingResponse(
-#             iter([report_content]),
-#             media_type=f'application/{format.lower()}',
-#             headers={'Content-Disposition': f'attachment; filename="{filename}"'}
-#         )
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Błąd podczas pobierania raportu: {str(e)}")
+@app.post("/raport/raport-platnosci", response_class=HTMLResponse)
+def raport_platnosci(request: Request, data_od: str = Form(...), data_do: str = Form(...)):
+    # Budowanie URL raportu
+    base_url = f"http://asus-x15-szymon/Reports/report/statystyki%20platnosci"
+    link = f"{base_url}?Data_od={data_od}&Data_do={data_do}"
+    return RedirectResponse(url=link)
+
+@app.post("/raport/formularz-klienta", response_class=HTMLResponse)
+def raport_klienta(request: Request,klient_id: int = Form(...), data_platnosci_od: str = Form(...), data_platnosci_do: str = Form(...)):
+    # Budowanie URL raportu
+    base_url = f"http://asus-x15-szymon/Reports/report/formularz"
+
+
+
+
+
+    link = f"{base_url}?Id_klienta_par={klient_id}&Data_platnosci_od={data_platnosci_od}&Data_platnosci_do={data_platnosci_do}"
+
+    return RedirectResponse(url=link)
