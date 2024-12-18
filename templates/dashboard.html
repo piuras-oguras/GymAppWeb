@@ -5,25 +5,34 @@
 <p>Email: {{ user.email }}</p>
 <p>Numer Telefonu: {{ user.numer_telefonu }}</p>
 <a href="/logout">Wyloguj się</a>
+
 <h2>Status Członkostwa</h2>
 <p>{{ membership_status }}</p>
-{% if show_button_sprzet%}
-<a href="/rezerwacja_sprzetu">Rezerwuj sprzet</a>
-{%endif%}
+<h2>Rezerwacja Sprzętu</h2>
+{% if current_rezerwacja %}
+<p><strong>Sprzęt:</strong> {{ current_rezerwacja.sprzet.nazwa }}</p>
+<p><strong>Data i Godzina:</strong> {{ current_rezerwacja.data_i_godzina }}</p>
+<p><strong>Czas Trwania:</strong> {{ current_rezerwacja.czas_trwania_rezerwacji }} minut</p>
+<a href="/cancel_rezerwacja">Anuluj rezerwację</a>
+{% else %}
+<a href="/rezerwacja_sprzetu">Rezerwuj sprzęt</a>
+{% endif %}
 <h2>Placówki</h2>
 <ul>
     {% for placowka in placowki %}
     <li>
         <strong>{{ placowka.nazwa }}</strong><br>
         Adres: {{ placowka.adres }}<br>
-        Godziny Otwarcia: {{ placowka.godziny_otwaria }}<br>
+        Godziny Otwarcia: {{ placowka.godziny_otwarcia }}<br> <!-- Poprawiono literówkę -->
         Telefon: {{ placowka.numer_telefonu }}
     </li>
     {% endfor %}
 </ul>
-<h2>Zajecia</h2>
-<p>{{aktualne_zajecia}}</p>
+
+<h2>Zajęcia</h2>
+<p>{{ aktualne_zajecia }}</p>
 <a href="/wypisz_sie">Zrezygnuj</a>
+
 <h2>Dostępne Zajęcia</h2>
 <table>
     <thead>
@@ -52,6 +61,7 @@
     {% endfor %}
     </tbody>
 </table>
+
 
 
 {% endblock %}

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import current_user
 
-from models import Klient, Czlonkostwo, Placowka, Zajecia
+from models import Klient, Czlonkostwo, Placowka, Zajecia, RezerwacjaSprzetu, Sprzet
 from database import engine, SessionLocal
 from datetime import datetime, timedelta
 from starlette.middleware.sessions import SessionMiddleware  # Ensure this import is correct
@@ -75,7 +75,11 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> Klient:
     return klient
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request, current_user: Klient = Depends(get_current_user), db: Session = Depends(get_db)):
+async def dashboard(
+        request: Request,
+        current_user: Klient = Depends(get_current_user),
+        db: Session = Depends(get_db)
+):
     # Pobierz status członkostwa użytkownika
     czlonkostwo = db.query(Czlonkostwo).filter(Czlonkostwo.id_klienta == current_user.id_klienta).first()
     button_status_reserved_things = False
@@ -84,22 +88,27 @@ async def dashboard(request: Request, current_user: Klient = Depends(get_current
     else:
         membership_status = f"{czlonkostwo.typ_czlonkostwa.capitalize()} (ważne do {czlonkostwo.data_zakonczenia})"
         button_status_reserved_things = True
+
     # Pobierz wszystkie placówki
     placowki = db.query(Placowka).all()
 
-    # Pobierz dostępne zajęcia (np. te, które są jeszcze nie rozpoczęte)
+    # Pobierz dostępne zajęcia
     teraz = datetime.now()
     zajecia = db.query(Zajecia).options(joinedload(Zajecia.instruktor)).all()
 
-    #Czy użytkownik jest zapisany na zajęcia
+    # Czy użytkownik jest zapisany na zajęcia
     czyZapisany = db.query(Klient).filter(Klient.id_klienta == current_user.id_klienta).first()
-    status_zajec = czyZapisany.id_zajec
+    status_zajec = czyZapisany.id_zajec if czyZapisany else None
 
     if status_zajec:
-        zajecia_pojedyncze  =db.query(Zajecia).filter(Zajecia.id_zajec == status_zajec).first()
+        zajecia_pojedyncze = db.query(Zajecia).filter(Zajecia.id_zajec == status_zajec).first()
         zajecia_aktualne = f"Jesteś zapisany na zajęcia {zajecia_pojedyncze.nazwa_zajec}, które odbywają się w dniu {zajecia_pojedyncze.data_i_godzina} w lokalizacji {zajecia_pojedyncze.lokalizacja_w_silowni}"
     else:
         zajecia_aktualne = "Aktualnie nie jesteś przypisany do zajęć"
+
+    # Pobierz bieżącą rezerwację sprzętu
+    current_rezerwacja = db.query(RezerwacjaSprzetu).filter(RezerwacjaSprzetu.id_klienta == current_user.id_klienta).first()
+
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "user": current_user,
@@ -107,8 +116,74 @@ async def dashboard(request: Request, current_user: Klient = Depends(get_current
         "placowki": placowki,
         "aktualne_zajecia": zajecia_aktualne,
         "zajecia": zajecia,
-        "show_button_sprzet": button_status_reserved_things
+        "show_button_sprzet": button_status_reserved_things,
+        "current_rezerwacja": current_rezerwacja
     })
+
+@app.get("/rezerwacja_sprzetu", response_class=HTMLResponse)
+async def rezerwacja_sprzetu(
+        request: Request,
+        db: Session = Depends(get_db),
+        current_user: Klient = Depends(get_current_user)
+):
+    # Pobierz wszystkie dostępne sprzęty (stan = "dostepne")
+    sprzet_dostepny = db.query(Sprzet).filter(Sprzet.stan == "Działa").all()
+    return templates.TemplateResponse("rezerwacja_sprzetu.html", {
+        "request": request,
+        "sprzet": sprzet_dostepny
+    })
+
+@app.post("/rezerwacja_sprzetu", response_class=RedirectResponse)
+async def rezerwacja_sprzetu_submit(
+        request: Request,
+        id_sprzetu: int = Form(...),
+        data_i_godzina: str = Form(...),  # Format: YYYY-MM-DD HH:MM
+        czas_trwania_rezerwacji: int = Form(...),  # Czas w minutach
+        db: Session = Depends(get_db),
+        current_user: Klient = Depends(get_current_user)
+):
+    # Parsowanie daty i godziny
+    try:
+        data_i_godzina_dt = datetime.strptime(data_i_godzina, "%Y-%m-%d %H:%M")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Nieprawidłowy format daty i godziny.")
+
+    # Oblicz koniec rezerwacji
+    end_time = data_i_godzina_dt + timedelta(minutes=czas_trwania_rezerwacji)
+
+    # Utwórz nową rezerwację
+    new_rezerwacja = RezerwacjaSprzetu(
+        data_i_godzina=data_i_godzina_dt,
+        czas_trwania_rezerwacji=czas_trwania_rezerwacji,
+        id_klienta=current_user.id_klienta,
+        id_sprzetu=id_sprzetu
+    )
+
+    try:
+        db.add(new_rezerwacja)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Błąd podczas tworzenia rezerwacji.")
+
+    return RedirectResponse(url="/dashboard?success=Sprzęt został zarezerwowany.", status_code=303)
+
+@app.get("/cancel_rezerwacja", response_class=RedirectResponse)
+async def cancel_rezerwacja(
+        request: Request,
+        db: Session = Depends(get_db),
+        current_user: Klient = Depends(get_current_user)
+):
+    # Pobierz bieżącą rezerwację użytkownika
+    reservation = db.query(RezerwacjaSprzetu).filter(RezerwacjaSprzetu.id_klienta == current_user.id_klienta).first()
+
+    if reservation:
+        db.delete(reservation)
+        db.commit()
+        return RedirectResponse(url="/dashboard?success=Rezerwacja została anulowana.", status_code=303)
+    else:
+        return RedirectResponse(url="/dashboard?error=Nie znaleziono rezerwacji.", status_code=303)
+
 
 @app.post("/zapisz_sie_na_zajecia", response_class=RedirectResponse)
 async def zapisz_sie_na_zajecia(
